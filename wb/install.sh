@@ -1,6 +1,6 @@
 #!/bin/bash
 # Wealthbox developer toolchain bootstrap
-# Usage: curl -fsSL https://raw.githubusercontent.com/starburstlabs/public/main/dev/bootstrap.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/starburstlabs/public/main/wb/install.sh | bash
 set -euo pipefail
 
 # Install Homebrew if missing
