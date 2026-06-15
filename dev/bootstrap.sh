@@ -4,10 +4,12 @@
 set -euo pipefail
 
 # Install Homebrew if missing
+_fresh_homebrew=false
 if ! command -v brew &>/dev/null; then
   echo "Installing Homebrew..."
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   eval "$(/opt/homebrew/bin/brew shellenv)"
+  _fresh_homebrew=true
 fi
 
 # Install GitHub CLI if missing
@@ -60,5 +62,9 @@ echo "Installing toolchain..."
 brew bundle --file "$DEV_TOOLS_DIR/Brewfile"
 
 echo ""
-echo "Toolchain installed. Run bootstrap to configure credentials:"
+if [ "$_fresh_homebrew" = true ]; then
+  echo "Toolchain installed. Open a new terminal tab, then run:"
+else
+  echo "Toolchain installed. Run:"
+fi
 echo "  wb dev:bootstrap"
