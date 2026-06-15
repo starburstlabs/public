@@ -24,7 +24,15 @@ fi
 gh auth setup-git
 
 # Clone dev-tools
-if [ -z "${WB_DEV_TOOLS_DIR:-}" ]; then
+WB_DIR="$HOME/.wb"
+WB_DEV_TOOLS_PATH_FILE="$WB_DIR/dev-tools-path"
+
+if [ -n "${WB_DEV_TOOLS_DIR:-}" ]; then
+  DEV_TOOLS_DIR="$WB_DEV_TOOLS_DIR"
+elif [ -f "$WB_DEV_TOOLS_PATH_FILE" ]; then
+  DEV_TOOLS_DIR="$(cat "$WB_DEV_TOOLS_PATH_FILE")"
+  echo "dev-tools location: $DEV_TOOLS_DIR"
+else
   while true; do
     printf "Where should dev-tools be cloned? [~/git/dev-tools]: "
     read -r _input </dev/tty
@@ -34,8 +42,6 @@ if [ -z "${WB_DEV_TOOLS_DIR:-}" ]; then
     read -r _confirm </dev/tty
     [[ "${_confirm:-y}" =~ ^[Yy]$ ]] && break
   done
-else
-  DEV_TOOLS_DIR="$WB_DEV_TOOLS_DIR"
 fi
 
 if [ ! -d "$DEV_TOOLS_DIR" ]; then
@@ -45,6 +51,9 @@ if [ ! -d "$DEV_TOOLS_DIR" ]; then
 else
   echo "dev-tools already at $DEV_TOOLS_DIR"
 fi
+
+mkdir -p "$WB_DIR"
+echo "$DEV_TOOLS_DIR" > "$WB_DEV_TOOLS_PATH_FILE"
 
 # Install toolchain via Brewfile (tap trust declared inline with trusted: true)
 echo "Installing toolchain..."
