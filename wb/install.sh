@@ -25,47 +25,12 @@ if ! gh auth status &>/dev/null; then
 fi
 gh auth setup-git
 
-# Clone dev-tools
-WB_DIR="$HOME/.wb"
-WB_DEV_TOOLS_PATH_FILE="$WB_DIR/dev-tools-path"
-
-if [ -n "${WB_DEV_TOOLS_DIR:-}" ]; then
-  DEV_TOOLS_DIR="$WB_DEV_TOOLS_DIR"
-elif [ -f "$WB_DEV_TOOLS_PATH_FILE" ]; then
-  DEV_TOOLS_DIR="$(cat "$WB_DEV_TOOLS_PATH_FILE")"
-  echo "dev-tools location: $DEV_TOOLS_DIR"
-else
-  while true; do
-    printf "Where should dev-tools be cloned? [~/git/dev-tools]: "
-    read -r _input </dev/tty
-    DEV_TOOLS_DIR="${_input:-$HOME/git/dev-tools}"
-    DEV_TOOLS_DIR="${DEV_TOOLS_DIR/#\~/$HOME}"
-    printf "Clone to %s? [Y/n]: " "$DEV_TOOLS_DIR"
-    read -r _confirm </dev/tty
-    [[ "${_confirm:-y}" =~ ^[Yy]$ ]] && break
-  done
-fi
-
-if [ ! -d "$DEV_TOOLS_DIR" ]; then
-  mkdir -p "$(dirname "$DEV_TOOLS_DIR")"
-  echo "Cloning dev-tools to $DEV_TOOLS_DIR..."
-  gh repo clone starburstlabs/dev-tools "$DEV_TOOLS_DIR"
-else
-  echo "Updating dev-tools at $DEV_TOOLS_DIR..."
-  if ! git -C "$DEV_TOOLS_DIR" pull --ff-only 2>/dev/null; then
-    echo "Warning: could not update dev-tools (local changes or diverged branch)."
-    echo "  cd $DEV_TOOLS_DIR && git pull origin main"
-    echo "  brew bundle --file $DEV_TOOLS_DIR/Brewfile"
-    exit 1
-  fi
-fi
-
-mkdir -p "$WB_DIR"
-echo "$DEV_TOOLS_DIR" > "$WB_DEV_TOOLS_PATH_FILE"
-
-# Install toolchain via Brewfile (tap trust declared inline with trusted: true)
+# Fetch Brewfile from dev-tools and install toolchain
 echo "Installing toolchain..."
-brew bundle --file "$DEV_TOOLS_DIR/Brewfile"
+WB_DIR="$HOME/.wb"
+mkdir -p "$WB_DIR"
+gh api repos/starburstlabs/dev-tools/contents/Brewfile --jq '.content | @base64d' > "$WB_DIR/Brewfile"
+brew bundle --file "$WB_DIR/Brewfile"
 
 echo ""
 if [ "$_fresh_homebrew" = true ]; then
