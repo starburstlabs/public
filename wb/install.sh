@@ -51,7 +51,13 @@ if [ ! -d "$DEV_TOOLS_DIR" ]; then
   echo "Cloning dev-tools to $DEV_TOOLS_DIR..."
   gh repo clone starburstlabs/dev-tools "$DEV_TOOLS_DIR"
 else
-  echo "dev-tools already at $DEV_TOOLS_DIR"
+  echo "Updating dev-tools at $DEV_TOOLS_DIR..."
+  if ! git -C "$DEV_TOOLS_DIR" pull --ff-only 2>/dev/null; then
+    echo "Warning: could not update dev-tools (local changes or diverged branch)."
+    echo "  cd $DEV_TOOLS_DIR && git pull origin main"
+    echo "  brew bundle --file $DEV_TOOLS_DIR/Brewfile"
+    exit 1
+  fi
 fi
 
 mkdir -p "$WB_DIR"
