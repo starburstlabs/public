@@ -24,8 +24,22 @@ fi
 gh auth setup-git
 
 # Clone dev-tools
-DEV_TOOLS_DIR="${WB_DEV_TOOLS_DIR:-$HOME/dev-tools}"
+if [ -z "${WB_DEV_TOOLS_DIR:-}" ]; then
+  while true; do
+    printf "Where should dev-tools be cloned? [~/git/dev-tools]: "
+    read -r _input </dev/tty
+    DEV_TOOLS_DIR="${_input:-$HOME/git/dev-tools}"
+    DEV_TOOLS_DIR="${DEV_TOOLS_DIR/#\~/$HOME}"
+    printf "Clone to %s? [Y/n]: " "$DEV_TOOLS_DIR"
+    read -r _confirm </dev/tty
+    [[ "${_confirm:-y}" =~ ^[Yy]$ ]] && break
+  done
+else
+  DEV_TOOLS_DIR="$WB_DEV_TOOLS_DIR"
+fi
+
 if [ ! -d "$DEV_TOOLS_DIR" ]; then
+  mkdir -p "$(dirname "$DEV_TOOLS_DIR")"
   echo "Cloning dev-tools to $DEV_TOOLS_DIR..."
   gh repo clone starburstlabs/dev-tools "$DEV_TOOLS_DIR"
 else
