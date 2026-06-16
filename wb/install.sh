@@ -5,6 +5,8 @@ set -euo pipefail
 
 [[ "$(uname -m)" == "arm64" ]] || { echo "Error: Apple Silicon (arm64) required."; exit 1; }
 
+export HOMEBREW_NO_AUTO_UPDATE=1
+
 # Install Homebrew if missing
 _fresh_homebrew=false
 if ! command -v brew &>/dev/null; then
