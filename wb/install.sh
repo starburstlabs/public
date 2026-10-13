@@ -11,8 +11,8 @@ die() { log "$@"; exit 1; }
 [[ "$(uname -m)" == "arm64" ]] || die "Apple Silicon (arm64) required."
 
 case "${1:-}" in
-  "") brewfiles=(Brewfile); manifest=Brewfile; program=wb ;;
-  --ops) brewfiles=(Brewfile Brewfile.ops); manifest=Brewfile.ops; program=wbops ;;
+  "") manifest=Brewfile; program=wb ;;
+  --ops) manifest=Brewfile.ops; program=wbops ;;
   *) die "Usage: install.sh [--ops]" ;;
 esac
 
@@ -37,25 +37,28 @@ command -v gh &>/dev/null || { log "Installing GitHub CLI..."; HOMEBREW_NO_ASK=1
 # lack the 'repo' scope or the starburstlabs org's SSO grant.
 if ! gh api repos/starburstlabs/dev-tools --silent 2>/dev/null; then
   log "Log in with a GitHub account that can read starburstlabs/dev-tools:"
-  gh auth login </dev/tty
+  gh auth login --hostname github.com </dev/tty
+  gh api repos/starburstlabs/dev-tools --silent \
+    || die "This GitHub account cannot read starburstlabs/dev-tools. Check repository access and organization SSO."
 fi
 gh auth setup-git
+# Sandboxed Git downloads cannot read gh's token from the macOS keychain.
+HOMEBREW_GITHUB_API_TOKEN="${HOMEBREW_GITHUB_API_TOKEN:-$(gh auth token --hostname github.com)}"
+export HOMEBREW_GITHUB_API_TOKEN HOMEBREW_NO_ASK=1
 
 # Refresh explicitly so an existing tap cannot install a stale release.
 log "Refreshing Homebrew..."
 brew update --quiet || die "Homebrew update failed (see output above)."
 
-# Keep profile files together so Brewfile.ops can include Brewfile.
-bundle_dir="$(mktemp -d)"
-trap 'rm -rf "$bundle_dir"' EXIT
-for brewfile in "${brewfiles[@]}"; do
-  gh api "repos/starburstlabs/dev-tools/contents/$brewfile" \
-    -H "Accept: application/vnd.github.raw" \
-    > "$bundle_dir/$brewfile" \
-    || die "Could not fetch $brewfile. Run 'gh auth setup-git', then re-run."
-done
+# Install or upgrade the CLI first, then apply the profile shipped by that release.
+# The ops formula also installs wb-cli, which owns both profile files.
+log "Installing $program..."
+brew bundle --file=- <<EOF
+tap "starburstlabs/dev-tools", trusted: true
+brew "starburstlabs/dev-tools/${program}-cli"
+EOF
 log "Installing $manifest..."
-HOMEBREW_NO_ASK=1 brew bundle --file="$bundle_dir/$manifest" \
+brew bundle --file="$(brew --prefix wb-cli)/libexec/$manifest" \
   || die "Toolchain install failed (see output above)."
 
 log ""
