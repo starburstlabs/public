@@ -24,7 +24,8 @@ export GIT_TERMINAL_PROMPT=0
 _fresh_homebrew=false
 if ! command -v brew &>/dev/null; then
   log "Installing Homebrew..."
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  homebrew_install_script="$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  /bin/bash -c "$homebrew_install_script" </dev/tty
   eval "$(/opt/homebrew/bin/brew shellenv)"  # /opt/homebrew is the ARM-only path; guarded above
   _fresh_homebrew=true
 fi
